@@ -166,10 +166,7 @@ The backend will:
 ```bash path=null start=null
 docker compose build && docker compose up -d
 ```
-- Tail logs:
-```bash path=null start=null
-use command of choice to view file within docker container vie docker exec | log file is client.log
-```
+- Tail logs: use command of choice to view file within docker container vie docker exec | log file is client.log
 - Stop:
 ```bash path=null start=null
 docker compose down
