@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Playwright Agent - Split View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0a0a;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .left-panel {
+            width: 50%;
+            height: 100%;
+            border-right: 2px solid #2a2a2a;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .left-header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .left-header h2 {
+            color: #e0e0e0;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+        }
+
+        .dashboard-frame {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #0a0a0a;
+        }
+
+        .right-panel {
+            width: 50%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0a;
+        }
+
+        .right-header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .right-header h2 {
+            color: #e0e0e0;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .browser-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 6px 12px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #3a3a3a;
+            border-color: #4a4a4a;
+        }
+
+        .vnc-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vnc-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading-message {
+            color: #6b7280;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .session-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 26, 26, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #9ca3af;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .session-info.active {
+            display: block;
+        }
+
+        .resize-handle {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+        }
+
+        .resize-handle:hover {
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 50%;
+                border-right: none;
+            }
+            
+            .left-panel {
+                border-bottom: 2px solid #2a2a2a;
+            }
+            
+            .resize-handle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="resize-handle" id="resizeHandle"></div>
+        
+        <div class="left-panel" id="leftPanel">
+            <div class="left-header">
+                <h2>Claude Playwright Agent Dashboard</h2>
+                <div class="status-indicator">
+                    <span class="status-dot" id="apiStatus"></span>
+                    <span>API Status</span>
+                </div>
+            </div>
+            <iframe 
+                src="/dashboard" 
+                class="dashboard-frame" 
+                id="dashboardFrame"
+            ></iframe>
+        </div>
+        
+        <div class="right-panel" id="rightPanel">
+            <div class="right-header">
+                <h2>Playwright Browser Session</h2>
+                <div class="browser-controls">
+                    <button class="control-btn" onclick="refreshVNC()">Refresh</button>
+                    <button class="control-btn" onclick="toggleFullscreen()">Fullscreen</button>
+                </div>
+            </div>
+            <div class="vnc-container" id="vncContainer">
+                <div class="loading-message" id="loadingMessage">
+                    Waiting for browser session to start...
+                </div>
+                <iframe 
+                    src="" 
+                    class="vnc-frame" 
+                    id="vncFrame"
+                    style="display: none;"
+                ></iframe>
+            </div>
+            <div class="session-info" id="sessionInfo">
+                <div>Session Active</div>
+                <div id="sessionDuration">Duration: 0:00</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check API status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    document.getElementById('apiStatus').classList.add('connected');
+                } else {
+                    document.getElementById('apiStatus').classList.remove('connected');
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').classList.remove('connected');
+            }
+        }
+
+        // Check VNC availability and connect
+        function connectVNC() {
+            const vncFrame = document.getElementById('vncFrame');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const sessionInfo = document.getElementById('sessionInfo');
+            
+            // Try to connect to noVNC
+            const vncUrl = `http://${window.location.hostname}:6080/vnc.html?autoconnect=true&password=vncpassword`;
+            
+            vncFrame.src = vncUrl;
+            vncFrame.style.display = 'block';
+            loadingMessage.style.display = 'none';
+            sessionInfo.classList.add('active');
+            
+            // Start session timer
+            startSessionTimer();
+        }
+
+        // Refresh VNC connection
+        function refreshVNC() {
+            const vncFrame = document.getElementById('vncFrame');
+            vncFrame.src = vncFrame.src;
+        }
+
+        // Toggle fullscreen for VNC
+        function toggleFullscreen() {
+            const vncContainer = document.getElementById('vncContainer');
+            if (!document.fullscreenElement) {
+                vncContainer.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Session timer
+        let sessionStart = null;
+        function startSessionTimer() {
+            sessionStart = Date.now();
+            setInterval(updateSessionDuration, 1000);
+        }
+
+        function updateSessionDuration() {
+            if (!sessionStart) return;
+            
+            const duration = Math.floor((Date.now() - sessionStart) / 1000);
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            
+            document.getElementById('sessionDuration').textContent = 
+                `Duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Resizable panels
+        const resizeHandle = document.getElementById('resizeHandle');
+        const leftPanel = document.getElementById('leftPanel');
+        const rightPanel = document.getElementById('rightPanel');
+        let isResizing = false;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const containerWidth = document.querySelector('.container').offsetWidth;
+            const leftWidth = (e.clientX / containerWidth) * 100;
+            const rightWidth = 100 - leftWidth;
+            
+            if (leftWidth > 20 && leftWidth < 80) {
+                leftPanel.style.width = `${leftWidth}%`;
+                rightPanel.style.width = `${rightWidth}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        });
+
+        // Listen for browser session events from dashboard
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'browserSessionStarted') {
+                connectVNC();
+            }
+        });
+
+        // Initialize
+        checkAPIStatus();
+        setInterval(checkAPIStatus, 5000);
+        
+        // Try to connect to VNC after a short delay
+        setTimeout(connectVNC, 2000);
+    </script>
+</body>
+</html>

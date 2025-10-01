@@ -1,0 +1,19 @@
+# Core dependencies
+fastapi
+uvicorn
+pydantic
+pydantic[email]
+multipart
+anthropic
+python-dotenv
+bitwarden-sdk
+
+# Async support
+asyncio
+# MCP dependencies
+dotenv
+
+# Performance dependencies
+httptools
+uvloop
+websockets

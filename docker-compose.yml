@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    container_name: claude-playwright-agent
+    ports:
+      - "5000:5000"
+      - "6080:6080"  # noVNC port
+    environment:
+      - DISPLAY=:99
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - VNC_RESOLUTION=1920x1080
+      - VNC_PASSWORD=vncpassword
+    volumes:
+      - ./browser-profiles:/app/browser-profiles
+      - /dev/shm:/dev/shm  # Shared memory for Chrome/Firefox
+    networks:
+      - playwright-network
+    shm_size: 2gb
+    stdin_open: true
+    tty: true
+
+networks:
+  playwright-network:
+    driver: bridge

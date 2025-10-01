@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Playwright Agent Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #151521 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(30, 30, 46, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #9ca3af;
+            font-size: 1rem;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.hidden {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            margin-bottom: 0;
+            transition: all 0.4s ease;
+        }
+
+        .form-group.show {
+            opacity: 1;
+            max-height: 100px;
+            margin-bottom: 20px;
+            transition: all 0.4s ease;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #b8bcc2;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input::placeholder {
+            color: #6b7280;
+        }
+
+        .action-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .action-option {
+            flex: 1;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .action-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .action-option.selected.refund {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: #f5576c;
+        }
+
+        .amount-input {
+            position: relative;
+        }
+
+        .amount-input::before {
+            content: '$';
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-weight: 500;
+            z-index: 1;
+        }
+
+        .amount-input input {
+            padding-left: 32px;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            max-height: 0;
+            margin-top: 0;
+        }
+
+        .submit-button.show {
+            opacity: 1;
+            max-height: 60px;
+            margin-top: 20px;
+            transition: all 0.4s ease;
+        }
+
+        .submit-button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: left 0.3s ease;
+        }
+
+        .submit-button:hover:before {
+            left: 100%;
+        }
+
+        .submit-button.receipt {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .submit-button.receipt:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button.refund {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .submit-button.refund:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .status-message.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .bitwarden-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .bitwarden-status .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #6b7280;
+        }
+
+        .bitwarden-status.connected .indicator {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        button:disabled, .submit-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:disabled:hover, .submit-button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 8px;
+        }
+
+        .step {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+
+        .step.completed {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Claude Playwright Agent</h1>
+            <p>Automated Receipt & Refund Processing</p>
+        </div>
+
+        <div class="bitwarden-status" id="bitwardenStatus">
+            <span class="indicator"></span>
+            <span>Bitwarden: Not Connected</span>
+        </div>
+
+        <!-- Device Verification Controls -->
+        <div class="form-section" style="margin-top: 10px;">
+            <label>Device Verification</label>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button class="submit-button receipt show" style="flex: 1;" onclick="startVerification()">Start Verification</button>
+                <button class="submit-button refund show" style="flex: 1;" onclick="finishVerification()">Finish & Save Cookies</button>
+            </div>
+            <div style="margin-top: 10px; color: #9ca3af; font-size: 0.9rem;">
+                Use Start Verification to open the browser in the right panel. Enter the device code in the site. When done, click Finish & Save Cookies.
+            </div>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
+
+        <div class="form-section">
+            <!-- Step 1: Transaction ID -->
+            <div class="form-group" id="transactionGroup">
+                <label for="transactionId">Transaction ID</label>
+                <input 
+                    type="text" 
+                    id="transactionId" 
+                    placeholder="e.g., 10859442284"
+                    required
+                    oninput="checkTransactionId()"
+                >
+            </div>
+
+            <!-- Step 2: Action Selection -->
+            <div class="form-group hidden" id="actionGroup">
+                <label>Select Action</label>
+                <div class="action-selector">
+                    <div class="action-option" id="receiptOption" onclick="selectAction('receipt')">
+                        📧 Send Receipt
+                    </div>
+                    <div class="action-option" id="refundOption" onclick="selectAction('refund')">
+                        💰 Process Refund
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3a: Email Field (for receipts) -->
+            <div class="form-group hidden" id="emailGroup">
+                <label for="clientEmail">Client Email</label>
+                <input 
+                    type="email" 
+                    id="clientEmail" 
+                    placeholder="e.g., client@example.com"
+                    required
+                    oninput="checkEmailField()"
+                >
+            </div>
+
+            <!-- Step 3b: Refund Amount Field (for refunds) -->
+            <div class="form-group hidden" id="refundAmountGroup">
+                <label for="refundAmount">Refund Amount</label>
+                <div class="amount-input">
+                    <input 
+                        type="number" 
+                        id="refundAmount" 
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        max="99999.99"
+                        oninput="checkRefundAmount()"
+                    >
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="submit-button" id="submitButton" onclick="submitForm()">
+                Process Action
+            </button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script>
+        // Backend API configuration
+        const API_BASE = 'http://localhost:5000/api';
+        let bitwardenConnected = false;
+        let selectedAction = null;
+        let currentStep = 1;
+
+        // Check backend status and Bitwarden connection
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                if (data.bitwarden_connected) {
+                    bitwardenConnected = true;
+                    updateBitwardenStatus(true);
+                } else {
+                    // Try to connect to Bitwarden
+                    connectBitwarden();
+                }
+            } catch (error) {
+                console.error('Failed to check backend status:', error);
+                showStatus('Cannot connect to backend. Make sure the Flask server is running.', 'error');
+            }
+        }
+
+        // Connect to Bitwarden
+        async function connectBitwarden() {
+            showStatus('Connecting to Bitwarden...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/bitwarden/connect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    bitwardenConnected = true;
+                    updateBitwardenStatus(true);
+                    showStatus(data.message || 'Bitwarden connected successfully', 'success');
+                } else {
+                    updateBitwardenStatus(false);
+                    showStatus('Failed to connect to Bitwarden: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Bitwarden connection error:', error);
+                updateBitwardenStatus(false);
+                showStatus('Failed to connect to Bitwarden', 'error');
+            }
+        }
+
+        // Update Bitwarden status indicator
+        function updateBitwardenStatus(connected) {
+            const statusEl = document.getElementById('bitwardenStatus');
+            if (connected) {
+                statusEl.classList.add('connected');
+                statusEl.innerHTML = '<span class="indicator"></span><span>Bitwarden: Connected</span>';
+            } else {
+                statusEl.classList.remove('connected');
+                statusEl.innerHTML = '<span class="indicator"></span><span>Bitwarden: Not Connected</span>';
+            }
+        }
+
+        // Update step indicators
+        function updateStepIndicators(step) {
+            for (let i = 1; i <= 3; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                stepEl.classList.remove('active', 'completed');
+                
+                if (i < step) {
+                    stepEl.classList.add('completed');
+                } else if (i === step) {
+                    stepEl.classList.add('active');
+                }
+            }
+        }
+
+        // Check transaction ID input
+        function checkTransactionId() {
+            const transactionId = document.getElementById('transactionId').value.trim();
+            if (transactionId && currentStep === 1) {
+                showActionSelection();
+            } else if (!transactionId && currentStep > 1) {
+                resetForm();
+            }
+        }
+
+        // Show action selection (step 2)
+        function showActionSelection() {
+            currentStep = 2;
+            updateStepIndicators(currentStep);
+            
+            const actionGroup = document.getElementById('actionGroup');
+            actionGroup.classList.remove('hidden');
+            actionGroup.classList.add('show');
+        }
+
+        // Select action (receipt or refund)
+        function selectAction(action) {
+            selectedAction = action;
+            
+            // Update action option styles
+            document.getElementById('receiptOption').classList.remove('selected');
+            document.getElementById('refundOption').classList.remove('selected');
+            
+            if (action === 'receipt') {
+                document.getElementById('receiptOption').classList.add('selected');
+                showEmailField();
+            } else if (action === 'refund') {
+                document.getElementById('refundOption').classList.add('selected', 'refund');
+                showRefundAmountField();
+            }
+        }
+
+        // Show email field (step 3a)
+        function showEmailField() {
+            currentStep = 3;
+            updateStepIndicators(currentStep);
+            
+            // Hide refund amount if it was shown
+            const refundGroup = document.getElementById('refundAmountGroup');
+            refundGroup.classList.remove('show');
+            refundGroup.classList.add('hidden');
+            
+            // Show email field
+            const emailGroup = document.getElementById('emailGroup');
+            emailGroup.classList.remove('hidden');
+            emailGroup.classList.add('show');
+            
+            // Update submit button
+            updateSubmitButton();
+            
+            // Focus on email field after animation
+            setTimeout(() => {
+                document.getElementById('clientEmail').focus();
+            }, 400);
+        }
+
+        // Show refund amount field (step 3b)
+        function showRefundAmountField() {
+            currentStep = 3;
+            updateStepIndicators(currentStep);
+            
+            // Hide email field if it was shown
+            const emailGroup = document.getElementById('emailGroup');
+            emailGroup.classList.remove('show');
+            emailGroup.classList.add('hidden');
+            
+            // Show refund amount field
+            const refundGroup = document.getElementById('refundAmountGroup');
+            refundGroup.classList.remove('hidden');
+            refundGroup.classList.add('show');
+            
+            // Update submit button
+            updateSubmitButton();
+            
+            // Focus on amount field after animation
+            setTimeout(() => {
+                document.getElementById('refundAmount').focus();
+            }, 400);
+        }
+
+        // Check email field
+        function checkEmailField() {
+            updateSubmitButton();
+        }
+
+        // Check refund amount
+        function checkRefundAmount() {
+            updateSubmitButton();
+        }
+
+        // Update submit button
+        function updateSubmitButton() {
+            const submitButton = document.getElementById('submitButton');
+            const isValid = validateCurrentStep();
+            
+            if (selectedAction && currentStep === 3 && isValid) {
+                submitButton.classList.add('show');
+                submitButton.classList.remove('receipt', 'refund');
+                submitButton.classList.add(selectedAction);
+                
+                if (selectedAction === 'receipt') {
+                    submitButton.textContent = 'Send Receipt';
+                } else if (selectedAction === 'refund') {
+                    submitButton.textContent = 'Process Refund';
+                }
+            } else {
+                submitButton.classList.remove('show');
+            }
+        }
+
+        // Validate current step
+        function validateCurrentStep() {
+            if (selectedAction === 'receipt') {
+                const email = document.getElementById('clientEmail').value.trim();
+                return email && isValidEmail(email);
+            } else if (selectedAction === 'refund') {
+                const amount = document.getElementById('refundAmount').value.trim();
+                return amount && parseFloat(amount) > 0 && parseFloat(amount) <= 99999.99;
+            }
+            return false;
+        }
+
+        // Reset form to initial state
+        function resetForm() {
+            currentStep = 1;
+            selectedAction = null;
+            updateStepIndicators(currentStep);
+            
+            // Hide all conditional fields
+            const groups = ['actionGroup', 'emailGroup', 'refundAmountGroup'];
+            groups.forEach(groupId => {
+                const group = document.getElementById(groupId);
+                group.classList.remove('show');
+                group.classList.add('hidden');
+            });
+            
+            // Hide submit button
+            const submitButton = document.getElementById('submitButton');
+            submitButton.classList.remove('show');
+            
+            // Clear selections
+            document.getElementById('receiptOption').classList.remove('selected');
+            document.getElementById('refundOption').classList.remove('selected', 'refund');
+            
+            // Clear form fields
+            document.getElementById('clientEmail').value = '';
+            document.getElementById('refundAmount').value = '';
+        }
+
+        // Initialize on page load
+        window.onload = () => {
+            checkStatus();
+            // Check status every 30 seconds
+            setInterval(checkStatus, 30000);
+        };
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.className = `status-message ${type}`;
+            statusEl.innerHTML = message;
+            statusEl.style.display = 'block';
+            
+            if (type !== 'info' || !message.includes('Processing')) {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        async function startVerification() {
+            showStatus('<span class="loading"></span>Starting verification session...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/verification/start`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus(data.message || 'Verification session started.', 'success');
+                    // Tell parent to show/connect VNC
+                    if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'browserSessionStarted' }, '*');
+                    }
+                } else {
+                    showStatus('Failed to start verification: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showStatus('Error contacting backend to start verification.', 'error');
+            }
+        }
+
+        async function finishVerification() {
+            showStatus('<span class="loading"></span>Finishing verification session...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/verification/finish`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus(data.message || 'Verification finished and cookies saved.', 'success');
+                } else {
+                    showStatus('Failed to finish verification: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showStatus('Error contacting backend to finish verification.', 'error');
+            }
+        }
+
+        // Submit form
+        async function submitForm() {
+            if (!validateCurrentStep()) {
+                showStatus('Please fill in all required fields correctly', 'error');
+                return;
+            }
+            
+            const transactionId = document.getElementById('transactionId').value.trim();
+            
+            // Disable submit button during processing
+            const submitButton = document.getElementById('submitButton');
+            submitButton.disabled = true;
+            
+            if (selectedAction === 'receipt') {
+                await sendReceipt(transactionId);
+            } else if (selectedAction === 'refund') {
+                await processRefund(transactionId);
+            }
+            
+            submitButton.disabled = false;
+        }
+
+        // Send receipt
+        async function sendReceipt(transactionId) {
+            const clientEmail = document.getElementById('clientEmail').value.trim();
+            
+            showStatus('<span class="loading"></span>Processing receipt request...', 'info');
+            
+            // Notify parent window that browser session is starting
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'browserSessionStarted' }, '*');
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/send_receipt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId,
+                        clientEmail
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(data.message || `Receipt sent successfully to ${clientEmail}`, 'success');
+                    // Reset form after success
+                    resetFormWithDelay();
+                } else {
+                    showStatus('Error: ' + (data.error || 'Failed to send receipt'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('Send receipt error:', error);
+                showStatus('Error: Failed to communicate with backend', 'error');
+            }
+        }
+
+        // Process refund
+        async function processRefund(transactionId) {
+            const refundAmount = parseFloat(document.getElementById('refundAmount').value.trim());
+            
+            showStatus('<span class="loading"></span>Processing refund request...', 'info');
+            
+            // Notify parent window that browser session is starting
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'browserSessionStarted' }, '*');
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/give_refund`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId,
+                        refundAmount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(data.message || `Refund of $${refundAmount.toFixed(2)} processed successfully for transaction ${transactionId}`, 'success');
+                    // Reset form after success
+                    resetFormWithDelay();
+                } else {
+                    showStatus('Error: ' + (data.error || 'Failed to process refund'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('Process refund error:', error);
+                showStatus('Error: Failed to communicate with backend', 'error');
+            }
+        }
+
+        // Reset form with delay after successful operation
+        function resetFormWithDelay() {
+            setTimeout(() => {
+                document.getElementById('transactionId').value = '';
+                resetForm();
+                document.getElementById('transactionId').focus();
+            }, 2000);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'Enter' && currentStep === 3 && validateCurrentStep()) {
+                    e.preventDefault();
+                    submitForm();
+                } else if (e.key === '1' && currentStep >= 2) {
+                    e.preventDefault();
+                    selectAction('receipt');
+                } else if (e.key === '2' && currentStep >= 2) {
+                    e.preventDefault();
+                    selectAction('refund');
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                resetForm();
+                document.getElementById('transactionId').focus();
+            }
+        });
+
+        // Auto-focus on transaction ID field
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('transactionId').focus();
+        });
+    </script>
+</body>
+</html>
